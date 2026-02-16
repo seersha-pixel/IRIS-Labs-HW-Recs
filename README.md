@@ -1,19 +1,14 @@
-# IRIS Labs Hardware Recruitments - 2026
+**PART-A**
+1)Synchronizing each bit of a multi bit encoded control signal independently can lead to incorrect decoding. This happens because while crossing clock domains, the time to settle from metastability might be different for different bits.This means the actual bits arrive in different clock cycles in the receiving domain. This may create temporary invalid or wrong bit combinations that weren't sent by the source.This would cause the receiver to incorrectly decode the control signal and give false outputs.
+2)From the timing diagram (waveforms) given in the assignment document, there is a skew between b[1] and b[0].This is again because of metastability due to skew. Because of the slight skew, one bit changes before the other(specific to this case), so for some time the decoder sees a combination of old and new values.That's exactly what happened here.b[0] settled to high before other two bits, so it got captured first and the other bits are a cycle late. Due to this latency adec[2] took a momentarily invalid value which further caused aen[1] to assert falsely.
+3)The fundamental design mistake is synchronising multi bits across clock domains independenty without any handhsake or gray code which would preserve the original inputs.
+4)One of the ways to safelyy transfer the control signal is to use Gray code.In gray code, only one bit changes from one value to the next. This means that even if there is a delay or some sorta time difference between bits, the receiver will not see invalid combinations. It will either be previous value or new one , nothing invalid.It reduces the chance of the decoder giving the wrong output.
+Another way is to use a handshake method. In this method, the sending clock domain send a "valid" signal to alert the receiving domain that the coming information is legitimate. The receiving side waits until it detects that valid signal, then captures the value and sends back a “read” signalThe sender keeps the value stable until it gets the read signal.All the bits are transferred togetehr so no place for incoherency.
+A third option is to send just a single synchronized pulse or toggle signal to say “new data is ready” and then store the control value in a register in the receiving clock domain. The receiving side updates only when it safely detects that signal. This way, the decoder always works with a stable, properly timed value instead of bits that might still be settling.(Sorta like FIFO)
 
-Thank you for showing your interest in joining IRIS Labs
+**PART-B**
+The main parts of the architecture are the FIFO based handshake mechanism and the line buffers used for implementing 2D convolution.At first, I used a normal handshake method to transfer pixel data, but then realized that wouldn't work because the clocks were asynchronous and simple handshake could cause metastability and receiver may see unstable or incorrect values.To prevent this asynchronous FIFO was introduced with separate read and write blocks and pointers which are synchronisd using gray code to prevent any sort of data incoherency during the clock domain crossing.After learning about convolution, initially I used only sliding windows and multiplied the kernel with it but then learnt that 2D convoltion was asked and realised the need for line buffers which would store previous rows for forming an actual 2D matrix.I didn't see the already named variables in the testbench and went ahead and aassumed my own variables soo I apologise for that :/(too late to change now).
+My design is better because it safely handles the two different clock domains using an asynchronous FIFO, instead of relying on a simple handshake that can cause unstable or corrupted data. The FIFO makes sure pixel data moves across reliably and supports smooth streaming even if the two sides run at different speeds.Using line buffers for 2D convolution also makes the processing efficient, since the required pixel rows are stored locally and a new output can be generated every clock cycle.The convolution block right now I think has latency of 1 clock cycle if I am not wrong.That could be solved by pipelining which I am yet to get comfortable with.
+architectural diagram
+<img width="525" height="699" alt="image" src="https://github.com/user-attachments/assets/b225a5e1-0b4e-4fc6-9a06-934563d4e20f" />
 
-
-## Submission Guidelines :
-
-1. Fork this repository
-2. Complete the design of all the modules with the provided boilerplate code with your own creativity
-3. Verify all modules thoroughly as per the assignment requirements
-4. Replace this README file in your fork with your own detailed README that includes:
-    - Design approach and architectural decisions
-    - Architectural diagrams (wherever required)
-    - Simulation waveforms
-    - Any assumptions or design trade-offs made
-5. Do not use AI tools to generate your README file. The documentation should reflect your own understanding and explanation of the work.
-
-
-All the best!
